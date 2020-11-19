@@ -7,7 +7,7 @@ import museval
 
 
 '''
-# FAST BSS TESTBED Version 0.1.0:
+# Novel ICA TESTBED Version 0.2.0:
 
     timer_start(self):
     timer_value(self):

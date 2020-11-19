@@ -3,7 +3,7 @@ import math
 
 
 '''
-# FAST BSS Version 0.1.0:
+# Novel ICA Version 0.1.0:
 
     fastica: FastICA (most stable)
     meica: Multi-level extraction ICA (stable)
@@ -330,195 +330,6 @@ class MultiLevelExtractionICA(FastbssBasic):
         return S2
 
 
-class ComponentDependentICA(FastbssBasic):
-
-    def mixing_matrix_estimation(self, X, ext_initial_matrix):
-        '''
-        # mixing_matrix_estimation(self, X, ext_initial_matrix):
-
-        # Usage:
-
-            According to the mixed signals observed from the observers, estimate
-            a rough mixing matrix, which is used for calculating the intial
-            separation matrix B_0.
-
-        # Parameters:
-
-            X: Mixed signals, which is obtained from the observers.
-            ext_initial_matrix: The signal extraction interval for mixed signals
-                extraction, default value is 0, which means use all the inputed 
-                signals.
-
-        # Output:
-
-            Estimated mixing matrix A.
-        '''
-        m, n = X.shape
-        sampling_interval = np.int(ext_initial_matrix)
-        _signals = X[:,
-                     ::sampling_interval] if sampling_interval else X
-        m, n = _signals.shape
-        A = np.zeros([m, m])
-        indexs_max_abs = np.nanargmax(np.abs(_signals), axis=-2)
-        indexs_max_abs_positive = np.where(
-            _signals[indexs_max_abs, np.arange(n)] > 0, indexs_max_abs, np.nan)
-        for y in range(m):
-            selected_indexs = np.argwhere(indexs_max_abs_positive == y)
-            if selected_indexs.shape[0] < 5:
-                return None
-            A[:, [y]] = np.sum(_signals[:, selected_indexs], axis=-2)
-        A = np.dot(A, np.diag(1/np.max(A, axis=-1)))
-        A = np.clip(A, 0.01, None)
-        return A
-
-    def cdica(self, X, max_iter=100, tol=1e-04, ext_initial_matrix=0):
-        '''
-        # cdica(self, X, max_iter=100, tol=1e-04, ext_initial_matrix=0):
-
-        # Usage:
-
-            Component dependent ICA. 
-            It is a combination of initial 
-            mixing matrix estimation and original fastica.
-
-        # Parameters:
-
-            X: Mixed signals, which is obtained from the observers.
-            max_iter: Maximum number of iteration.
-            tol: Tolerance of the convergence of the matrix B 
-                calculated from the last iteration and the 
-                matrix B calculated from current newton iteration.
-            ext_initial_matrix: The signal extraction interval for mixed signals
-                extraction, default value is 0, which means use all the inputed 
-                signals.
-
-        # Output:
-
-            Estimated source signals matrix S.
-        '''
-        X, V = self.whiten(X)
-        A1 = self.mixing_matrix_estimation(X, ext_initial_matrix)
-        B1 = self.generate_initial_matrix_B(V, A1)
-        B2 = self.newton_iteration(B1, X, max_iter, tol)[0]
-        S2 = np.dot(B2, X)
-        return S2
-
-
-class AdapiveExtractionICA(FastbssBasic):
-
-    def adaptive_extraction_iteration(self, X, B, max_iter, tol, ext_adapt_ica):
-        '''
-        # adaptive_extraction_iteration(self, X, B, max_iter, tol, _ext_adapt_ica):
-
-        # Usage:
-
-            Adaptive extraction newton iteration.
-            It is a combination of several fastica algorithm with different partial
-            signals, which is extracted by different intervals. the extraction 
-            interval can be detemined by the convergence of the iteration.
-
-        # Parameters:
-
-            X: Mixed signals, which is obtained from the observers.
-            max_iter: Maximum number of iteration.
-            tol: Tolerance of the convergence of the matrix B 
-                calculated from the last iteration and the 
-                matrix B calculated from current newton iteration.
-            _ext_adapt_ica: The intial and the maximum extraction interval of the 
-                input signals.
-
-        # Output:
-
-            Estimated source separation matrix B.
-        '''
-        _prop_series = np.arange(1, ext_adapt_ica)
-        grads_num = _prop_series.shape[0]
-        _tols = tol*(_prop_series**0.5)
-        _tol = 1
-        for i in range(grads_num-1, 0, -1):
-            if _tol > _tols[i]:
-                _X = X[:, ::np.int(_prop_series[i])]
-                _X, V, V_inv = self.whiten_with_inv_V(_X)
-                B = self.decorrelation(np.dot(B, V_inv))
-                B, _tol = self.newton_iteration(B, _X, max_iter, _tols[i])
-                B = np.dot(B, V)
-        _X = X
-        _X, V, V_inv = self.whiten_with_inv_V(_X)
-        B = self.decorrelation(np.dot(B, V_inv))
-        B, _tol = self.newton_iteration(B, _X, max_iter, _tols[i])
-        B = np.dot(B, V)
-        return B
-
-    def aeica(self, X, max_iter=100, tol=1e-04, ext_adapt_ica=50):
-        '''
-        # aeica(self, X, max_iter=100, tol=1e-04, ext_adapt_ica=30):
-
-        # Usage:
-
-            Adaptive extraction ICA.
-            It is a combination of several fastica algorithm with different partial
-            signals, which is extracted by different intervals. the extraction 
-            interval can be detemined by the convergence of the iteration.
-            A original fastica is added at the end, in order to get the best result.
-
-        # Parameters:
-
-            X: Mixed signals, which is obtained from the observers.
-            max_iter: Maximum number of iteration.
-            tol: Tolerance of the convergence of the matrix B 
-                calculated from the last iteration and the 
-                matrix B calculated from current newton iteration.
-            _ext_adapt_ica: The intial and the maximum extraction interval of the 
-                input signals.
-
-        # Output:
-
-            Estimated source signals matrix S.
-        '''
-        B1 = self.generate_initial_matrix_B(X)
-        B2 = self.adaptive_extraction_iteration(
-            X, B1, max_iter, tol, ext_adapt_ica)
-        S2 = np.dot(B2, X)
-        return S2
-
-
-class UltraFastICA(ComponentDependentICA, AdapiveExtractionICA):
-
-    def ufica(self, X, max_iter=100, tol=1e-04, ext_initial_matrix=0, ext_adapt_ica=100):
-        '''
-        # ufica(self, X, max_iter=100, tol=1e-04, ext_initial_matrix=0, ext_adapt_ica=100):
-
-        # Usage:
-
-            Ultra-fast ICA.
-            It is a combination of CdICA and AeICA. Firstly, CdICA, then, AeICA.
-
-        # Parameters:
-
-            X: Mixed signals, which is obtained from the observers.
-            max_iter: Maximum number of iteration.
-            tol: Tolerance of the convergence of the matrix B 
-                calculated from the last iteration and the 
-                matrix B calculated from current newton iteration.
-            ext_initial_matrix: The signal extraction interval for mixed signals
-                extraction, default value is 0, which means use all the inputed 
-                signals.
-            _ext_adapt_ica: The intial and the maximum extraction interval of the 
-                input signals.
-
-        # Output:
-
-            Estimated source signals matrix S.
-        '''
-        #X, V = self.whiten(X)
-        A1 = self.mixing_matrix_estimation(X, ext_initial_matrix)
-        B1 = np.linalg.inv(A1)
-        B2 = self.adaptive_extraction_iteration(
-            X, B1, max_iter, tol, ext_adapt_ica)
-        S2 = np.dot(B2, X)
-        return S2
-
-
 class FastICA(FastbssBasic):
 
     def newton_iteration_auto_break2(self, B, X, max_iter, break_coef):
@@ -599,23 +410,16 @@ class FastICA(FastbssBasic):
         return S2
 
 
-class PyFastbss(MultiLevelExtractionICA, UltraFastICA, FastICA):
+class PyFastbss(MultiLevelExtractionICA, FastICA):
 
     def fastbss(self, method, X, max_iter=100, tol=1e-04, break_coef=0.9, ext_initial_matrix=0, ext_adapt_ica=100, ext_multi_ica=8):
         if method == 'fastica':
             return self.fastica(X, max_iter, tol)
         elif method == 'meica':
             return self.meica(X, max_iter, tol, break_coef, ext_multi_ica)
-        elif method == 'cdica':
-            return self.cdica(X, max_iter, tol, ext_initial_matrix)
-        elif method == 'aeica':
-            return self.aeica(X, max_iter, tol, ext_adapt_ica)
-        elif method == 'ufica':
-            return self.ufica(X, max_iter, tol, ext_initial_matrix, ext_adapt_ica)
         else:
             print('Method Identification Error!')
             return None
-
 
 # pyfastbss core
 pyfbss = PyFastbss()
