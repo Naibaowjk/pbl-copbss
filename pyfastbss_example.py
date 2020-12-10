@@ -30,7 +30,6 @@ PGB = progressbar.ProgressBar()
     B = A ^ -1
 '''
 
-
 def save_data_csv(data, name_csv):
     if os.path.isfile(name_csv):
         f = open(file=name_csv, mode='ab')
