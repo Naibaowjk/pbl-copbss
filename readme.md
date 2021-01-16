@@ -96,13 +96,13 @@ optional arguments:
 ```
 To run Simulator, you can use subcommand `simulator`
 ```
-usage: client.py simulator [-h] [--mode {UDP,L2FWD,ALL,None}] [--test_num TEST_NUM] [--source_num SOURCE_NUM] [--run_FastICA] [--run_MeICA] [--service_latency SERVICE_LATENCY] [--service_performance SERVICE_PERFORMANCE]
+usage: client.py simulator [-h] [--mode {Multicast,Unicast,ALL,None}] [--test_num TEST_NUM] [--source_num SOURCE_NUM] [--run_FastICA] [--run_MeICA] [--service_latency SERVICE_LATENCY] [--service_performance SERVICE_PERFORMANCE]
                            [--micro_latency MICRO_LATENCY]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --mode {UDP,L2FWD,ALL,None}
-                        UDP:optimaize the random latency, latency setting change to mean latency. L2FWD: hop run one by one. ALL run & plot all. Default mode is [L2FWD]
+  --mode {Multicast,Unicast,ALL,None}
+                        Multicast:optimaize the random latency, latency setting change to mean latency. Unicast: hop run one by one. ALL run & plot all. Default mode is [Unicast]
   --test_num TEST_NUM   setting the test number for each source number, default: 3
   --source_num SOURCE_NUM
                         setting source number, default: 5

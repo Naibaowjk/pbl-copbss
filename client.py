@@ -108,9 +108,9 @@ def init_arg():
     parser_simulator.add_argument(
         "--mode",
         type=str,
-        default='L2FWD',
-        choices=['UDP', 'L2FWD', 'ALL', 'None'],
-        help='UDP:optimaize the random latency, latency setting change to mean latency. L2FWD: hop run one by one. ALL run & plot all. Default mode is [L2FWD]'
+        default='Unicast',
+        choices=['Multicast', 'Unicast', 'ALL', 'None'],
+        help='Multicast:optimaize the random latency, latency setting change to mean latency. Unicast: hop run one by one. ALL run & plot all. Default mode is [Unicast]'
     )
     # 子命令：进行模拟----设定模拟次数
     parser_simulator.add_argument(
@@ -240,9 +240,9 @@ def core(if_fast: bool, if_me: bool, source_number: int, test_number: int, simu_
     source_list = np.arange(2,source_number+1,1)
     # 设定 ms_MeICA
     time_list_ms_MeICA = np.tile(np.arange(source_number-1), (test_number, 1))
-    time_list_ms_MeICA_L2FWD = np.tile(
+    time_list_ms_MeICA_Unicast = np.tile(
         np.arange(source_number-1), (test_number, 1))
-    time_list_ms_MeICA_UDP = np.tile(
+    time_list_ms_MeICA_Multicast = np.tile(
         np.arange(source_number-1), (test_number, 1))
     snr_list_ms_MeICA = np.tile(np.arange(source_number-1), (test_number, 1))
     # 设定 Me_ICA
@@ -274,7 +274,7 @@ def core(if_fast: bool, if_me: bool, source_number: int, test_number: int, simu_
             # Time simulator
             time_list_ms_MeICA[t][s-2] = time_ms_MeICA
             if simu_mode != 'None':
-                # simu_mode=='L2FWD':
+                # simu_mode=='Unicast':
                 '''
                 算法：
                 client发送接受Source_Controller和B_Manager的信息，latency*4
@@ -283,13 +283,13 @@ def core(if_fast: bool, if_me: bool, source_number: int, test_number: int, simu_
                 [N-1]到[N],latency*(grad-1)
                 MeICA_Controller接受B，算S，latency
                 '''
-                time_ms_MeICA_L2FWD = time_ms_MeICA + (4+2)*latency_ms
+                time_ms_MeICA_Unicast = time_ms_MeICA + (4+2)*latency_ms
                 for i in range(MeICA_controller.get_grad()+1):
-                    time_ms_MeICA_L2FWD = time_ms_MeICA_L2FWD + \
+                    time_ms_MeICA_Unicast = time_ms_MeICA_Unicast + \
                         get_latency_random(latency_ms, latency_ms/5)
                     pass
-                time_list_ms_MeICA_L2FWD[t][s-2] = time_ms_MeICA_L2FWD
-                #   simu_mode=='UDP':
+                time_list_ms_MeICA_Unicast[t][s-2] = time_ms_MeICA_Unicast
+                #   simu_mode=='Multicast':
                 '''
                 # 算法：
                 # client发送接受Source_Controller和B_Manager的信息，latency*4
@@ -298,16 +298,16 @@ def core(if_fast: bool, if_me: bool, source_number: int, test_number: int, simu_
                 # MeICA_Controller与hop_MeICA_newton_iteration的通信可以取grad个hop中延迟最小的那个
                 # 假设有grad个hop，做grad次运算，对每次设定一个lantency list
                 '''
-                time_ms_MeICA_UDP = time_ms_MeICA + (4+2)*latency_ms
+                time_ms_MeICA_Multicast = time_ms_MeICA + (4+2)*latency_ms
                 for i in range(MeICA_controller.get_grad()):
                     latency_temp_list = []
                     for j in range(MeICA_controller.get_grad()):
                         latency_temp_list.append(
                             get_latency_random(latency_ms, latency_ms/5))
-                    time_ms_MeICA_UDP = time_ms_MeICA_UDP + \
+                    time_ms_MeICA_Multicast = time_ms_MeICA_Multicast + \
                         2*min(latency_temp_list)
 
-                time_list_ms_MeICA_UDP[t][s-2] = time_ms_MeICA_UDP
+                time_list_ms_MeICA_Multicast[t][s-2] = time_ms_MeICA_Multicast
             snr_list_ms_MeICA[t][s-2] = pyfbss_tb.bss_evaluation(
                 Source_controller.get_S(), hat_S_ms, eval_type)
 
@@ -360,17 +360,17 @@ def core(if_fast: bool, if_me: bool, source_number: int, test_number: int, simu_
     if simu_mode == 'None':
         plt.plot(np.array(source_list), np.mean(
             time_list_ms_MeICA,axis=0), 'o-', label='MircoService_MeICA')
-    if simu_mode == 'L2FWD':
+    if simu_mode == 'Unicast':
         plt.plot(np.array(source_list), np.mean(
-            time_list_ms_MeICA_L2FWD,axis=0), 'o-', label='MircoService_MeICA_L2FWD')
-    if simu_mode == 'UDP':
+            time_list_ms_MeICA_Unicast,axis=0), 'o-', label='MircoService_MeICA_Unicast')
+    if simu_mode == 'Multicast':
         plt.plot(np.array(source_list), np.mean(
-            time_list_ms_MeICA_UDP,axis=0), 'o-', label='MircoService_MeICA_UDP')
+            time_list_ms_MeICA_Multicast,axis=0), 'o-', label='MircoService_MeICA_Multicast')
     if simu_mode == 'ALL':
         plt.plot(np.array(source_list), np.mean(
-            time_list_ms_MeICA_UDP,axis=0), 'o-', label='MircoService_MeICA_UDP')
+            time_list_ms_MeICA_Multicast,axis=0), 'o-', label='MircoService_MeICA_Multicast')
         plt.plot(np.array(source_list), np.mean(
-            time_list_ms_MeICA_L2FWD,axis=0), 'o-', label='MircoService_MeICA_L2FWD')
+            time_list_ms_MeICA_Unicast,axis=0), 'o-', label='MircoService_MeICA_Unicast')
     if if_fast:
         # plt.plot(np.array(source_list), np.mean(
         #     time_list_FastICA,axis=0), 'o-', label='FastICA')
