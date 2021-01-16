@@ -63,43 +63,59 @@ This part's core and alogrithm also base on `pyfastbss_core.py`.
 
 Here is Information to run the Simulator of Microservice. 
 
-run the `client.py` to show the figure of **Time-Source Number** and **SNR-Source Number**
+Default running is MeICA base on Mircosevice in Native & Plot
 ```
-python3 client.py
+usage: client.py [-h] [--source_num SOURCE_NUM] [--test_num TEST_NUM] [--run_FastICA] [--run_MeICA] {iter_time,simulator} ...
+
+run MeICA base on Mircosevice in Native & Plot
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --source_num SOURCE_NUM
+                        setting source number, default: 5
+  --test_num TEST_NUM   setting the test number for each source number, default: 3
+  --run_FastICA         run FastICA
+  --run_MeICA           run MeICA
+
+Option Function:
+  {iter_time,simulator}
+    iter_time           get the info of MeICA base on Microservice
+    simulator           simulate the situation in the Network
 ```
 
-If you want to see the Hop Microservice information, you can run:
+if you want to check Hop information, you can use subcommand `iter_time`
 ```
-python3 client.py --iter_time 1 0
+usage: client.py iter_time [-h] [--plot] [--source_num SOURCE_NUM]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --plot                plot the information in Figure[at now don't work]
+  --source_num SOURCE_NUM
+                        setting source number, default: 5
+
 ```
-If you want to compare MeICA on MS with MeICA and FastICA, run:
+To run Simulator, you can use subcommand `simulator`
 ```
-python3 client.py --run_FastICA --run_MeICA
+usage: client.py simulator [-h] [--mode {UDP,L2FWD,ALL,None}] [--test_num TEST_NUM] [--source_num SOURCE_NUM] [--run_FastICA] [--run_MeICA] [--service_latency SERVICE_LATENCY] [--service_performance SERVICE_PERFORMANCE]
+                           [--micro_latency MICRO_LATENCY]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --mode {UDP,L2FWD,ALL,None}
+                        UDP:optimaize the random latency, latency setting change to mean latency. L2FWD: hop run one by one. ALL run & plot all. Default mode is [L2FWD]
+  --test_num TEST_NUM   setting the test number for each source number, default: 3
+  --source_num SOURCE_NUM
+                        setting source number, default: 5
+  --run_FastICA         run FastICA
+  --run_MeICA           run MeICA
+  --service_latency SERVICE_LATENCY
+                        setting the latency of service for origin MeICA, default: 150 [ms]
+  --service_performance SERVICE_PERFORMANCE
+                        setting the performance of service compare to mircoservice, default: 10 [times]
+  --micro_latency MICRO_LATENCY
+                        setting the latency of micro service, default: 50 [ms]
 ```
-Because the time reason, we don't simulate it in `mininet` so we provide a simple simulator to compare the proformance by run:
-```
-python3 client.py --run_FastICA --run_MeICA --run_Simulator
-```
-You can also setting the parameter for this simulator:
-```
---service_latency SERVICE_LATENCY
-                        setting the latency of service for origin MeICA, 
-                        default: 50 [ms]
---service_performance SERVICE_PERFORMANCE
-                        setting the performance of service compare to mircoservice, 
-                        default: 10 [times]
---micro_latency MICRO_LATENCY
-                        setting the latency of micro service, 
-                        default: 0.5 [ms]
-```
-The default sounce number is : 5 , you can set it by running, e.x:
-```
---source_num 10
-```
-More Information by running you can see help, by running:
-```
-python3 client.py -h
-```
+
 ### Tips:
 If you use WSL2, you need to use Tkagg to show the figure, by adding
 ```
